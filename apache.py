@@ -1,6 +1,8 @@
 import os
 import argparse
 import subprocess
+import webbrowser
+import time
 
 def configure_apache(ip, port, directory, server_name):
     apache_conf_path = "/data/data/com.termux/files/usr/etc/apache2/httpd.conf"
@@ -85,6 +87,13 @@ def configure_apache(ip, port, directory, server_name):
 
     # Restart Apache server
     subprocess.run(["apachectl", "restart"])
+
+    # Give some time for the server to start
+    time.sleep(2)
+
+    # Open the index.php page in the default web browser
+    url = f"http://{ip}:{port}/index.php"
+    webbrowser.open(url)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Configure and start Apache server.")
