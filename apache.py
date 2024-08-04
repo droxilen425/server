@@ -46,7 +46,7 @@ def configure_apache(ip, port, directory, server_name):
     if not server_name_set:
         conf.append(f'ServerName {server_name}\n')
     if not php_module_set:
-        conf.append('LoadModule php_module modules/libphp.so\n')
+        conf.append('LoadModule php7_module modules/libphp7.so\n')  # Correct path for PHP module
     if not php_handler_set:
         conf.append(
             "<FilesMatch \\.php$>\n"
