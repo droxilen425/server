@@ -4,6 +4,7 @@ import subprocess
 
 def configure_apache(ip, port, directory, server_name):
     apache_conf_path = "/data/data/com.termux/files/usr/etc/apache2/httpd.conf"
+    php_module_path = "/data/data/com.termux/files/usr/libexec/apache2/libphp.so"
     
     # Read the existing configuration file
     with open(apache_conf_path, 'r') as file:
@@ -31,7 +32,8 @@ def configure_apache(ip, port, directory, server_name):
         if line.startswith("ServerName"):
             conf[i] = f'ServerName {server_name}\n'
             server_name_set = True
-        if line.startswith("LoadModule php_module"):
+        if "libphp.so" in line:
+            conf[i] = f'LoadModule php_module {php_module_path}\n'
             php_module_set = True
         if line.startswith("<FilesMatch \.php$>"):
             php_handler_set = True
@@ -46,7 +48,7 @@ def configure_apache(ip, port, directory, server_name):
     if not server_name_set:
         conf.append(f'ServerName {server_name}\n')
     if not php_module_set:
-        conf.append('LoadModule php7_module modules/libphp7.so\n')  # Correct path for PHP module
+        conf.append(f'LoadModule php_module {php_module_path}\n')
     if not php_handler_set:
         conf.append(
             "<FilesMatch \\.php$>\n"
