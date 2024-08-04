@@ -6,6 +6,23 @@ def configure_apache(ip, port, directory, server_name):
     apache_conf_path = "/data/data/com.termux/files/usr/etc/apache2/httpd.conf"
     php_module_path = "/data/data/com.termux/files/usr/libexec/apache2/libphp.so"
     
+    # Locate the MPM modules
+    mpm_modules = {
+        "prefork": "/data/data/com.termux/files/usr/libexec/apache2/mod_mpm_prefork.so",
+        "event": "/data/data/com.termux/files/usr/libexec/apache2/mod_mpm_event.so",
+        "worker": "/data/data/com.termux/files/usr/libexec/apache2/mod_mpm_worker.so"
+    }
+
+    # Determine which MPM module is available
+    available_mpm_module = None
+    for mpm, path in mpm_modules.items():
+        if os.path.exists(path):
+            available_mpm_module = mpm
+            break
+
+    if available_mpm_module is None:
+        raise Exception("No available MPM module found.")
+
     # Read the existing configuration file
     with open(apache_conf_path, 'r') as file:
         conf = file.readlines()
@@ -17,8 +34,7 @@ def configure_apache(ip, port, directory, server_name):
     server_name_set = False
     php_module_set = False
     php_handler_set = False
-    mpm_event_disabled = False
-    mpm_prefork_enabled = False
+    mpm_set = False
 
     # Modify the configuration lines
     for i, line in enumerate(conf):
@@ -39,12 +55,9 @@ def configure_apache(ip, port, directory, server_name):
             php_module_set = True
         if line.startswith("<FilesMatch \.php$>"):
             php_handler_set = True
-        if line.startswith("LoadModule mpm_event_module"):
-            conf[i] = "#LoadModule mpm_event_module modules/mod_mpm_event.so\n"
-            mpm_event_disabled = True
-        if line.startswith("#LoadModule mpm_prefork_module"):
-            conf[i] = "LoadModule mpm_prefork_module modules/mod_mpm_prefork.so\n"
-            mpm_prefork_enabled = True
+        if "mod_mpm_" in line:
+            conf[i] = f'LoadModule mpm_{available_mpm_module}_module {mpm_modules[available_mpm_module]}\n'
+            mpm_set = True
 
     # If directives are not found, add them
     if not listen_set:
@@ -63,10 +76,8 @@ def configure_apache(ip, port, directory, server_name):
             "    SetHandler application/x-httpd-php\n"
             "</FilesMatch>\n"
         )
-    if not mpm_event_disabled:
-        conf.insert(0, "#LoadModule mpm_event_module modules/mod_mpm_event.so\n")
-    if not mpm_prefork_enabled:
-        conf.insert(0, "LoadModule mpm_prefork_module modules/mod_mpm_prefork.so\n")
+    if not mpm_set:
+        conf.insert(0, f'LoadModule mpm_{available_mpm_module}_module {mpm_modules[available_mpm_module]}\n')
 
     # Write the modified configuration back to the file
     with open(apache_conf_path, 'w') as file:
