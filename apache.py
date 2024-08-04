@@ -14,6 +14,8 @@ def configure_apache(ip, port, directory, server_name):
     docroot_set = False
     directory_set = False
     server_name_set = False
+    php_module_set = False
+    php_handler_set = False
 
     # Modify the configuration lines
     for i, line in enumerate(conf):
@@ -29,6 +31,10 @@ def configure_apache(ip, port, directory, server_name):
         if line.startswith("ServerName"):
             conf[i] = f'ServerName {server_name}\n'
             server_name_set = True
+        if line.startswith("LoadModule php_module"):
+            php_module_set = True
+        if line.startswith("<FilesMatch \.php$>"):
+            php_handler_set = True
 
     # If directives are not found, add them
     if not listen_set:
@@ -39,6 +45,14 @@ def configure_apache(ip, port, directory, server_name):
         conf.append(f'<Directory "{directory}">\n</Directory>\n')
     if not server_name_set:
         conf.append(f'ServerName {server_name}\n')
+    if not php_module_set:
+        conf.append('LoadModule php_module modules/libphp.so\n')
+    if not php_handler_set:
+        conf.append(
+            "<FilesMatch \\.php$>\n"
+            "    SetHandler application/x-httpd-php\n"
+            "</FilesMatch>\n"
+        )
 
     # Write the modified configuration back to the file
     with open(apache_conf_path, 'w') as file:
